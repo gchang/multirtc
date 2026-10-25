@@ -26,20 +26,27 @@ Results: these change relative to an unpinned install made today; they go back t
 
 `from_isce_datetime` in `src/multirtc/base.py` passes isce3's `DateTime.isoformat()` string, which has nine fractional digits (`2024-10-27T09:59:58.375861000`), to `datetime.fromisoformat`. Python 3.10 rejects it (`ValueError: Invalid isoformat string`), so the Sentinel-1 RTC stopped on 3.10; Python 3.11 and newer accept it. `requires-python` in `pyproject.toml`, the classifier and the `environment.yml` floor are now 3.11. No change to results.
 
+## 2026-10-25: CPU build of isce3, and an explicit conda lock for Linux
+
+Creating the environment from `environment.yml` took conda 17 minutes, almost all of it in the solver, and it picked isce3's `cuda120` build, which brings CUDA runtime libraries that the RTC does not use (on a machine without a GPU isce3 runs its CPU code either way). `environment.yml` now asks for the CPU build, `isce3=0.22.1=*_cpu`, which cut the solve to 10 min 42 s (4.0 GB peak memory).
+
+`conda-linux-64.lock` is the solved environment written out with `conda list --explicit --md5`: 327 conda-forge packages for linux-64, each with its URL and MD5, and no solver step when installing. The README now creates the environment from it (`conda create -n multirtc --file conda-linux-64.lock`), then installs this package with `python -m pip install -e .` as before. `environment.yml` stays as the readable list of dependencies, with a comment at the top pointing to the lock, and is still the route for other platforms. To refresh the lock after changing `environment.yml`, solve it and run `conda list --explicit --md5 > conda-linux-64.lock` in the new environment.
+
+Results: none. The Python, isce3, GDAL and numpy versions are the same as before (3.12.15, 0.22.1, 3.9.3, 1.26.4); only the isce3 build changed from `cuda120` to `cpu`, and the check burst's statistics against the official product are identical to the last digit (see Check).
+
 ## Check
 
 On 2026-10-25, from a fresh clone of this repository, following the README's developer setup on Linux x86_64 (2 cores, 7 GB):
 
 ```sh
-conda env create -f environment.yml   # or: conda env update -n <env> -f environment.yml
-conda activate multirtc
-python -m pip install -e .
+conda create -n multirtc --file conda-linux-64.lock && conda activate multirtc && python -m pip install -e .
 pytest
 multirtc rtc S1 S1_146160_IW1_20241029T095958_VV_592B-BURST --resolution 30 --work-dir <work dir>
 ```
 
-- The environment solved to Python 3.12.15, isce3 0.22.1 (conda-forge `cuda` build; its CPU code is what runs on a machine without a GPU), GDAL 3.9.3, numpy 1.26.4, s1reader 0.2.5, burst2safe 2.0.3. Creating it took 17 minutes, most of it in the conda solver, with 4.5 GB peak memory. `pip check` reports one mismatch that does not affect the RTC: imagecodecs 2026.8.16 asks for numpy 2.1 or newer.
+- Creating the environment from the lock took 52 seconds with an empty package cache (all 327 packages downloaded from conda-forge), and `pip install -e .` 3 seconds. The environment is 2.4 GB: Python 3.12.15, isce3 0.22.1 (`py312h1234567_2_cpu`), GDAL 3.9.3, numpy 1.26.4, s1reader 0.2.5, burst2safe 2.0.3. `pip check` reports one mismatch that does not affect the RTC: imagecodecs 2026.8.16 asks for numpy 2.1 or newer.
+- Solving `environment.yml` instead (`conda env update -f environment.yml`) gives the same packages in 10 min 42 s; before the CPU pin it took 17 minutes and picked the `cuda120` build of isce3.
 - `pytest`: 2 passed.
-- A tile URL that returns 404 now stops `download_opera_dem_for_footprint` with `404 Client Error: Not Found for url: ...` naming the tile.
-- `multirtc rtc`: exit 0 in 4 min 7 s with 1.82 GB peak memory, downloads included (the 119 MB one-burst SAFE, a 4.7 MB orbit file and two DEM v1.2 tiles; about 0.6 GB in the work folder).
-- Against the official OPERA RTC-S1 product `OPERA_L2_RTC-S1_T069-146160-IW1_20241029T095958Z_20241029T184129Z_S1A_30_v1.0` (ASF DAAC) on the shared 30 m UTM grid, VV gamma0 over the 1,940,392 pixels valid in both: mean absolute difference 0.0046 dB, median 0.00001 dB, 99.987% of pixels within 0.1 dB and 99.994% within 0.5 dB, r = 0.99999; the layover/shadow mask agrees on 99.988% of pixels.
+- A tile URL that returns 404 stops `download_opera_dem_for_footprint` with `404 Client Error: Not Found for url: ...` naming the tile (checked with the earlier environment).
+- `multirtc rtc`: exit 0 in 3 min 59 s with 1.81 GB peak memory, downloads included (the 119 MB one-burst SAFE, a 4.7 MB orbit file and two DEM v1.2 tiles; about 0.6 GB in the work folder).
+- Against the official OPERA RTC-S1 product `OPERA_L2_RTC-S1_T069-146160-IW1_20241029T095958Z_20241029T184129Z_S1A_30_v1.0` (ASF DAAC) on the shared 30 m UTM grid, VV gamma0 over the 1,940,392 pixels valid in both: mean absolute difference 0.0046 dB, median 0.00001 dB, 99.987% of pixels within 0.1 dB and 99.994% within 0.5 dB, r = 0.99999; the layover/shadow mask agrees on 99.988% of pixels. These are the same numbers, to every digit, as with the `cuda120` build of isce3.
