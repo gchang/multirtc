@@ -1,3 +1,5 @@
+# Solving this file takes conda about 10 minutes. conda-linux-64.lock lists the exact packages it solved to on
+# Linux x86_64 and installs in a few minutes: conda create -n multirtc --file conda-linux-64.lock (see README).
 name: multirtc
 channels:
   - conda-forge
@@ -10,8 +12,9 @@ dependencies:
   - numpy>=1.20
   # isce3 0.22.1 reproduces the official OPERA RTC-S1 products (made with isce3 0.15.0) to 0.005 dB; newer
   # isce3 (0.25) changes gamma0 on steep slopes by tenths of a dB. 0.22 is the oldest isce3 with the
-  # point-target functions that multimetric/point_target.py imports.
-  - isce3=0.22.1
+  # point-target functions that multimetric/point_target.py imports. The *_cpu build string keeps conda from
+  # picking the CUDA build, which needs CUDA libraries and is not used by the RTC.
+  - isce3=0.22.1=*_cpu
   - boto3
   - requests
   - lxml
