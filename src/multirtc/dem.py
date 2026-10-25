@@ -175,7 +175,7 @@ def download_opera_dem_for_footprint(output_path: Path, footprint: Polygon, buff
     urls = [get_dem_granule_url(lat, lon) for lat, lon in latlon_pairs]
 
     with ThreadPoolExecutor(max_workers=4) as executor:
-        executor.map(lambda url: download_file(url, str(output_dir)), urls)
+        list(executor.map(lambda url: download_file(url, str(output_dir)), urls))
 
     vrt_filepath = output_dir / 'dem.vrt'
     input_files = [str(output_dir / Path(url).name) for url in urls]
