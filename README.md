@@ -152,19 +152,19 @@ We're currently working on this package on a "best effort" basis with no specifi
 ## Developer Setup
 1. Ensure that conda is installed on your system (we recommend using [mambaforge](https://github.com/conda-forge/miniforge#mambaforge) to reduce setup times).
 2. Download a local version of the `multirtc` repository (`git clone https://github.com/forrestfwilliams/multirtc.git`)
-3. In the base directory for this project call `mamba env create -f environment.yml` to create your Python environment, then activate it (`mamba activate multirtc`)
+3. In the base directory for this project call `conda create -n multirtc --file conda-linux-64.lock` to create your Python environment, then activate it (`conda activate multirtc`)
 4. Finally, install a development version of the package (`python -m pip install -e .`)
 
 To run all commands in sequence use:
 ```bash
 git clone https://github.com/forrestfwilliams/multirtc.git
 cd multirtc
-mamba env create -f environment.yml
-mamba activate multirtc
-python -m pip install -e .
+conda create -n multirtc --file conda-linux-64.lock && conda activate multirtc && python -m pip install -e .
 ```
 
-`environment.yml` pins isce3 to 0.22.1, which reproduces the official OPERA RTC-S1 products for Sentinel-1 bursts; with a newer isce3 the results differ from them by tenths of a dB on steep slopes.
+`conda-linux-64.lock` is the exact list of conda-forge packages that `environment.yml` solves to on Linux x86_64, so the environment installs in a few minutes without running the solver. `environment.yml` is the readable list of dependencies; it also works (`mamba env create -f environment.yml`, then `mamba activate multirtc`), and it is the route for other platforms, but conda takes about 10 minutes to solve it.
+
+`environment.yml` pins isce3 to 0.22.1 (its CPU build), which reproduces the official OPERA RTC-S1 products for Sentinel-1 bursts; with a newer isce3 the results differ from them by tenths of a dB on steep slopes.
 
 ## License
 MultiRTC is licensed under the BSD-3-Clause license. See the LICENSE file for more details.
