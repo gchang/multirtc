@@ -164,6 +164,8 @@ mamba activate multirtc
 python -m pip install -e .
 ```
 
+`environment.yml` pins isce3 to 0.22.1, which reproduces the official OPERA RTC-S1 products for Sentinel-1 bursts; with a newer isce3 the results differ from them by tenths of a dB on steep slopes.
+
 ## License
 MultiRTC is licensed under the BSD-3-Clause license. See the LICENSE file for more details.
 
